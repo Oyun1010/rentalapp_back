@@ -5,7 +5,8 @@ const jwt = require('jsonwebtoken');
 
 require('dotenv').config();
 
-const Owner = require('../schema/owner');
+const Owner = require('../model/owner');
+const Equipment = require('../model/equipment');
 
 router.post("/login", async (req, res) => {
     try {
@@ -19,7 +20,7 @@ router.post("/login", async (req, res) => {
 
             const token = jwt.sign(
                 { id: owner._id },
-                process.env.TOKEN_KEY,
+                process.env.TOKEN_SECRET,
                 { expiresIn: "5h" }
             );
             owner.token = token;
@@ -37,23 +38,22 @@ router.post("/login", async (req, res) => {
 router.post("/register", async (req, res) => {
     console.log("body" + req.body);
     try {
-        const { ownerName, password, email, phone, address } = req.body;
+        const { name, password, email, phone, address } = req.body;
         const oldUser = await Owner.findOne({ phone: phone });
         if (oldUser) {
             return res.status(409).send("User Already Exist.");
         }
         encryptedPassword = await bcrypt.hash(password, 10);
         const owner = await Owner.create({
-            ownerName: ownerName,
+            name: name,
             password: encryptedPassword,
             email: email,
             phone: phone,
             address: address,
-
         });
         const token = jwt.sign(
             { id: owner._id },
-            process.env.TOKEN_KEY, {
+            process.env.TOKEN_SECRET, {
             expiresIn: "2h",
         }
         );
@@ -68,18 +68,36 @@ router.post("/register", async (req, res) => {
     }
 });
 
+router.get('/:id', async (req, res) => {
+    const id = req.params.id;
+
+    await Owner.findOne({ _id: id })
+        .then((data) => {
+            res.status(200).send(data);
+        })
+        .catch((error) => {
+            console.log(error);
+        })
+})
 
 
-router.get("/all", async (req, res) => {
-    await Owner.find({}).then((data) => {
+router.get("/equipments/:id", async (req, res) => {
+    const id = req.params.id;
+    await Equipment.find({ ownerId: id }).then((data) => {
         res.status(200).send(data);
     }).catch((err) => {
         res.status(500).send(err);
     });
 });
+router.post("/createEquipment", async (req, res) => {
+    try {
+        await Equipment.create(req.body);
+        res.status(200).send("ok");
+    }
+    catch (err) {
+        console.log(err);
 
-
-
-
+    }
+});
 
 module.exports = router;

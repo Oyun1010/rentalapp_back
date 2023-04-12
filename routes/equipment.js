@@ -1,21 +1,12 @@
 const express = require('express');
 const router = express.Router();
 
-const Equipments = require('../schema/equipment');
-const Locations = require('../schema/location');
-const Categories = require('../schema/categories');
+const Equipment = require('../model/equipment');
+const Categories = require('../model/categories');
 
-router.get('/locations', async (req, res) => {
-    const { equip_id } = req.body;
-    await Locations.find({}).then((data) => {
-        res.status(200).send(data);
-    }).catch((err) => {
-        res.status(500).send(err)
-    });
-});
 
 router.get("/equipment", async (req, res) => {
-    await Equipments.find({ "ownerId": req.body })
+    await Equipment.find({ "ownerId": req.body })
         .then((data) => {
             res.status(200).send(data);
         })
@@ -23,9 +14,31 @@ router.get("/equipment", async (req, res) => {
             res.status(500).send(err);
         });
 });
+
+router.get("/getEquipment/:id", async (req, res) => {
+    await Equipment.findById(req.params.id).
+        then((data) => res.status(200).send(data))
+        .catch((error) => console.log(error));
+})
+
+router.delete("/delete/:id", async (req, res) => {
+    await Equipment.findByIdAndDelete(req.params.id)
+        .then(() => {
+            res.status(200).send("success");
+        })
+        .catch((error) => console.log(error));
+});
+
+router.post("/update/:id", async (req, res) => {
+    await Equipment.findByIdAndUpdate(req.params.id, req.body)
+        .then(() => {
+            res.status(200).send("success");
+        })
+        .catch((error) => console.log(error));
+})
 
 router.get("/all", async (req, res) => {
-    await Equipments.find({})
+    await Equipment.find({})
         .then((data) => {
             res.status(200).send(data);
         })
@@ -34,19 +47,9 @@ router.get("/all", async (req, res) => {
         });
 });
 
-router.post("/create", async (req, res) => {
-    try {
-        await Equipments.create(req.body);
-        res.status(200).send("ok");
-    }
-    catch (err) {
-        console.log(err);
-
-    }
-});
 
 router.get("/categories", async (req, res) => {
-    await Categories.find({}).
+    await Categories.findOne({}).
         then((data) => {
             res.status(200).send(data);
         })
@@ -54,5 +57,6 @@ router.get("/categories", async (req, res) => {
             res.status(500).send(err);
         });
 });
+
 
 module.exports = router;

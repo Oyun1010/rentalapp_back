@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
-const Equipment = mongoose.model("equipments", new mongoose.Schema({
-    ownerId: { type: Object },
+const Equipment = mongoose.model("equipment", new mongoose.Schema({
+    ownerId: { type: Schema.Types.ObjectId, ref: 'owner' },
     images: { type: Array },
     name: { type: String },
     brand: { type: String },
@@ -12,8 +13,7 @@ const Equipment = mongoose.model("equipments", new mongoose.Schema({
     quantity: { type: Number },
     price: { type: Number },
     availabilityPeriod: { type: Date },
-    type: { type: String },
-    catergories: { type: Array },
+    catergory: { type: String },
     location: new mongoose.Schema({
         lat: { type: Number, default: 0.0 },
         long: { type: Number, default: 0.0 },

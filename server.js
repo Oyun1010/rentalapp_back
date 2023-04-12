@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 
 
 const app = express();
-const hostName = "192.168.0.100";
+const ipAddress = "192.168.0.101";
 
 
 app.use(bodyParser.json()) // for parsing application/json
@@ -26,7 +26,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
 mainRouters(app);
 
-var server = app.listen(5000, hostName, function () {
+var server = app.listen(5000, ipAddress, function () {
     var port = server.address().port;
-    console.log('Listening at http://192.168.0.100:' + port);
+    console.log('Listening at ' + ipAddress + ":" + port);
 });
