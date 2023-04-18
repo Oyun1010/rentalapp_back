@@ -7,6 +7,9 @@ require('dotenv').config();
 
 const Owner = require('../model/owner');
 const Equipment = require('../model/equipment');
+const Booking = require('../model/booking');
+const auth = require('../middleware/auth');
+const mongoose = require('mongoose');
 
 router.post("/login", async (req, res) => {
     try {
@@ -68,30 +71,69 @@ router.post("/register", async (req, res) => {
     }
 });
 
-router.get('/:id', async (req, res) => {
-    const id = req.params.id;
-
-    await Owner.findOne({ _id: id })
-        .then((data) => {
-            res.status(200).send(data);
-        })
-        .catch((error) => {
-            console.log(error);
-        })
+router.get("/info", auth, async (req, res) => {
+    await Owner.findById(req.user_id)
+        .then((data) => res.status(200).send(data))
+        .catch((error) => console.log(error));
 })
 
+router.post('/updateInfo', auth, async (req, res) => {
+    const { name, email, phone } = req.body;
+    await Owner.findByIdAndUpdate(req.user_id, {
+        name: name,
+        email: email
 
-router.get("/equipments/:id", async (req, res) => {
-    const id = req.params.id;
-    await Equipment.find({ ownerId: id }).then((data) => {
-        res.status(200).send(data);
-    }).catch((err) => {
-        res.status(500).send(err);
     });
+    res.status(200).send("success");
 });
-router.post("/createEquipment", async (req, res) => {
+router.post('/updateAddress', auth, async (req, res) => {
+    const { city, district, committee, fullAddress } = req.body;
+    await Owner.findByIdAndUpdate(req.user_id, {
+        city: city,
+        district: district,
+        committee: committee,
+        fullAddress: fullAddress,
+    });
+    res.status(200).send("succ");
+});
+router.post('updateBanckAccount', auth, async (req, res) => {
+    const { accountName, bankName, accoundNumber, qpay } = req.body;
+    await Owner.findByIdAndUpdate(req.user_id, {
+        accountName: accountName,
+        bankName: bankName,
+        accoundNumber: accoundNumber,
+        qpay: qpay,
+    });
+    res.status(200).send("succ");
+})
+
+router.get("/deleteAccount", auth, async (req, res) => {
+    await Owner.findByIdAndDelete(req.user_id);
+    res.status(200).send("success");
+})
+
+router.post("/createEquipment", auth, async (req, res) => {
+    const { images, name, model, brand, desc, key, year, quantity, price, availabilityPeriod, catergory, lat, long, fullAddress } = req.body;
     try {
-        await Equipment.create(req.body);
+        await Equipment.create({
+            ownerId: req.user_id,
+            images: images,
+            name: name,
+            model: model,
+            brand: brand,
+            desc: desc,
+            key: key,
+            year: year,
+            quantity: quantity,
+            price: price,
+            availabilityPeriod: availabilityPeriod,
+            catergory: catergory,
+            location: {
+                lat: lat,
+                long: long,
+                fullAddress: fullAddress
+            }
+        });
         res.status(200).send("ok");
     }
     catch (err) {
@@ -99,5 +141,82 @@ router.post("/createEquipment", async (req, res) => {
 
     }
 });
+
+router.post("/updateEquipment/:id", auth, async (req, res) => {
+    console.log("+" + req.params.id);
+    await Equipment.findByIdAndUpdate(req.params.id, req.body);
+    res.status(200).send("success");
+})
+
+router.post("/confirm", auth, async (req, res) => {
+    await Booking.findByIdAndUpdate(req.body.bookingId, {
+        status: "Баталгаажсан"
+    })
+    res.status(200).send("success");
+})
+
+router.post("/cancel", auth, async (req, res) => {
+    await Booking.findByIdAndUpdate(req.body.bookingId, {
+        status: "Цуцлагдсан"
+    });
+});
+
+router.get('/booking', auth, async (req, res) => {
+
+
+    // await Equipment.aggregate([
+    //     {
+    //         $match: {
+    //           ownerId: new mongoose.Types.ObjectId(req.user_id)
+    //         }
+    //     },
+    //     {
+    //         $lookup: {
+    //           from: 'booking',
+    //           localField: 'equipmentId',
+    //           foreignField: 'equipmentId',
+    //           let: {
+    //             bookingEquipmentId : "$equipmentId",
+    //           },
+    //           pipeline: [ {
+    //             $match: {
+    //                $expr: { $in: [ "$$bookingEquipmentId", "$equipmentId" ] }
+    //             }
+    //          } ],
+    //           as: 'booking'
+    //         }
+    //     },
+
+    // ])
+    await Booking.aggregate([
+        {
+            $lookup: {
+                from: 'equipment',
+                localField: 'equipmentId',
+                foreignField: '_id',
+                pipeline: [{
+                    $match: {
+                        ownerId: new mongoose.Types.ObjectId(req.user_id)
+                    }
+                }],
+                as: 'equipment'
+            },
+
+        },
+        {
+            $unwind: '$equipment'
+        }
+    ])
+        .then((data) => {
+            console.log('data ' + data[0].equipment);
+            res.status(200).send(data);
+        })
+        .catch((error) => {
+            console.log(error);
+        })
+
+
+});
+
 
 module.exports = router;

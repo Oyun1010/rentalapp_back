@@ -15,6 +15,14 @@ router.get("/equipment", async (req, res) => {
         });
 });
 
+router.get("/owner/:id", async (req, res) => {
+    await Equipment.find({ ownerId: req.params.id }).then((data) => {
+        res.status(200).send(data);
+    }).catch((err) => {
+        res.status(500).send(err);
+    });
+});
+
 router.get("/getEquipment/:id", async (req, res) => {
     await Equipment.findById(req.params.id).
         then((data) => res.status(200).send(data))

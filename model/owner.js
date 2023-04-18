@@ -12,7 +12,12 @@ const Owner = mongoose.model("owners", new mongoose.Schema({
         committee: { type: String },
         fullAddress: { type: String },
     }),
-    accountNumber: { type: String },
+    bankAccount: new mongoose.Schema({
+        accountName: { type: String, default: null },
+        bankName: { type: String, default: null },
+        accountNumber: { type: String, default: null },
+        qpay: { type: String, default: null }
+    }),
     rate: { type: Number, default: 0 }
 }));
 

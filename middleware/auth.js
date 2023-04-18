@@ -15,7 +15,7 @@ const auth = (req, res, next) => {
         // let id = "64240cfbeba5995db52dcec2"
         // renter id = "64240cfbeba5995db52dcec2"
         // owner id = "64206fd14a07c042a476aab0"
-        req.user_id = "64240cfbeba5995db52dcec2";
+        req.user_id = "64206fd14a07c042a476aab0";
         return next();
     }
     catch (error) {

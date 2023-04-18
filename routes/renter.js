@@ -189,9 +189,11 @@ router.post('/createBooking', auth, async (req, res) => {
         .catch((error) => console.log(error));
 });
 
-router.get('/deleteBooking/:id', auth, async (req, res) => {
-    await Booking.findOneAndDelete({ _id: req.params.id })
-    then(() => res.status(200).send("success"));
+router.post('/deleteBooking', auth, async (req, res) => {
+    console.log("delete");
+    await Booking.findByIdAndDelete(req.body.id);
+    res.status(200).send("success");
+ 
 });
 
 router.get('/getBooking', auth, async (req, res) => {
