@@ -13,11 +13,12 @@ const Equipment = mongoose.model("equipment", new mongoose.Schema({
     quantity: { type: Number, default: 1 },
     price: { type: Number },
     availabilityPeriod: { type: Date },
-    category: { type: String },
+    category: { type: String, default: '' },
+    details: {type: Object},
     location: new mongoose.Schema({
-        lat: { type: Number, default: 0.0 },
-        long: { type: Number, default: 0.0 },
-        fullAddress: { type: String, default: "" }
+        lat: { type: Number },
+        long: { type: Number},
+        fullAddress: { type: String }
     }),
     delivery: new mongoose.Schema({
         price: { type: Number },

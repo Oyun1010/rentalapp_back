@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 
 const Equipment = require('../model/equipment');
-const Categories = require('../model/categories');
+const auth = require('../middleware/auth');
+const Details = require('../model/details');
 
 
 router.get("/equipment", async (req, res) => {
@@ -15,8 +16,10 @@ router.get("/equipment", async (req, res) => {
         });
 });
 
-router.get("/owner/:id", async (req, res) => {
-    await Equipment.find({ ownerId: req.params.id }).then((data) => {
+router.get("/owner/:owner_id", async (req, res) => {
+    console.log("hhhhh");
+    await Equipment.find({ ownerId: req.params.owner_id }).sort({ _id: -1 }).then((data) => {
+        console.log(data);
         res.status(200).send(data);
     }).catch((err) => {
         res.status(500).send(err);
@@ -46,7 +49,20 @@ router.post("/update/:id", async (req, res) => {
 })
 
 router.get("/all", async (req, res) => {
-    await Equipment.find({})
+    console.log("-------------");
+    await Equipment.aggregate([
+        {
+            $lookup: {
+                from: 'owners',
+                localField: "ownerId",
+                foreignField: "_id",
+                as: "owner"
+            }
+        },
+        {
+            $unwind: '$owner'
+        }
+    ])
         .then((data) => {
             res.status(200).send(data);
         })
@@ -57,8 +73,9 @@ router.get("/all", async (req, res) => {
 
 
 router.get("/categories", async (req, res) => {
-    await Categories.findOne({}).
+    await Details.find({}).
         then((data) => {
+            console.log(data);
             res.status(200).send(data);
         })
         .catch((err) => {

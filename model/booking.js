@@ -8,8 +8,9 @@ const Booking = mongoose.model("booking", new mongoose.Schema({
     startDate: { type: Date },
     endDate: { type: Date },
     total: { type: Number },
-    quantity: {type: Number},
+    quantity: { type: Number },
     status: { type: String, default: "Хүлээгдэж буй" },
+    isReceived: { type: Boolean, default: false },
     delivery: new mongoose.Schema({
         bookingId: { type: Schema.Types.ObjectId },
         option: { type: String },

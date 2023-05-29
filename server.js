@@ -1,13 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 const bodyParser = require('body-parser');
-
-
 const app = express();
-const ipAddress = "192.168.0.101";
+const ipAddress = "192.168.0.102";
 
-
+app.use(cors({ origin: '*' }));
 app.use(bodyParser.json()) // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true }));
 

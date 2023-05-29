@@ -1,26 +1,22 @@
 const jwt = require("jsonwebtoken");
-require('dotenv').config();
 
-const auth = (req, res, next) => {
-    // const token = req.headers['Authorization'];
-    const token = req.headers["x-access-token"];
-    console.log("AUTH TOKEN: ", token);
- 
-    // if (!token) return res.status(401).json({ message: "Unauthorized User" });
+const asyncHandler = require("./asyncHandler");
 
-    try {
-        // const token = req.body.token || req.query.token || req.headers["x-access-token"] || req.headers["authorization"];
-        // let verified = jwt.verify(token, process.env.TOKEN_SECRET);
-      
-        // let id = "64240cfbeba5995db52dcec2"
-        // renter id = "64240cfbeba5995db52dcec2"
-        // owner id = "64206fd14a07c042a476aab0"
-        req.user_id = "64206fd14a07c042a476aab0";
-        return next();
-    }
-    catch (error) {
-        console.log(error);
-        res.status(401).json({ message: "Unauthorized User" })
-    }
+
+const auth = asyncHandler(async (req, res, next) => {
+
+    const token = req.headers.authorization ? req.headers.authorization.split(" ")[1] : null;
+    // console.log("AUTH : " , req.headers);
+    // if (!token) res.status(409).send("token error");
+
+    // const verified = jwt.verify(token, process.env.TOKEN_SECRET);
+    // if (verified) {
+     //   req.user_id = verified.id;
+    // }
+    req.user_id = "64206fd14a07c042a476aab0";
+   // req.user_id = "64240cfbeba5995db52dcec2";
+
+    return next();
 }
+);
 module.exports = auth;

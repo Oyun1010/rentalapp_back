@@ -12,9 +12,9 @@ const Renter = require('../model/renter');
 const Saved = require('../model/save');
 const Equipment = require('../model/equipment');
 const Booking = require('../model/booking');
-
-
-
+const Repair = require('../model/repair');
+const Rating = require('../model/rating');
+const Notification = require('../model/notification');
 
 router.post("/login", async (req, res) => {
     try {
@@ -26,17 +26,13 @@ router.post("/login", async (req, res) => {
         const renter = await Renter.findOne({ phone: phone });
         if (renter && (await bcrypt.compare(password, renter.password))) {
 
-            console.log("HH", process.env.TOKEN_SECRET);
-
             const token = jwt.sign(
                 { id: renter._id },
                 process.env.TOKEN_SECRET,
-                { expiresIn: "1d" }
+                { expiresIn: "7d" }
             );
 
-            renter.token = token;
-
-            res.status(200).send({
+            return res.status(200).send({
                 token: token,
                 data: renter
             });
@@ -68,11 +64,10 @@ router.post("/register", async (req, res) => {
         const token = jwt.sign(
             { id: renter._id.toString() },
             process.env.TOKEN_SECRET, {
-            expiresIn: "1d",
+            expiresIn: "7d",
         }
         );
-        renter.token = token;
-        res.header("auth-token", token).send(token);
+
         res.status(200).send({
             token: token,
             data: renter
@@ -83,8 +78,14 @@ router.post("/register", async (req, res) => {
     }
 });
 
-router.get('/saved', auth, async (req, res) => {
-    const id = req.params.id;
+router.get("/info", auth, async (req, res) => {
+    await Renter.findById(req.user_id)
+        .then((data) => res.status(200).send(data))
+        .catch((error) => console.log(error));
+})
+
+router.get("/saved", auth, async (req, res) => {
+
     await Saved.findOne({ renterId: req.user_id }).then((data) => {
         return res.status(200).json(data);
     }).catch((error) => console.log(error));
@@ -105,12 +106,23 @@ router.post('/addSaved', auth, async (req, res) => {
             }).then((data) => res.status(200).send(data));
         }
         else {
-            await Saved.findOneAndUpdate({ renterId: req.user_id },
-                {
-                    $push: { equipments: equipmentId }
+            let saved = await Saved.findOne({
+                equipments: {
+                    $elemMatch: {
+                        equipmentId: equipmentId
+                    }
                 }
-            ).then(() => res.status(200).send("success"))
-                .catch((error) => console.log(error));
+            });
+            if (!saved) {
+                await Saved.findOneAndUpdate({ renterId: req.user_id },
+                    {
+                        $push: { equipments: equipmentId }
+                    }
+                ).then(() => res.status(200).send("success"))
+                    .catch((error) => console.log(error));
+            }
+            else res.status(200).send("");
+
         }
 
     } catch (error) {
@@ -173,7 +185,7 @@ router.get('/deleteAccount', auth, async (req, res) => {
 
 router.post('/createBooking', auth, async (req, res) => {
 
-    const { equipmentId, currentDate, startDate, endDate, quantity, total, delivery } = req.body;
+    const { equipmentId, currentDate, startDate, endDate, quantity, total, delivery, recipient, equipment_name } = req.body;
 
     await Booking.create({
         renterId: req.user_id,
@@ -187,13 +199,24 @@ router.post('/createBooking', auth, async (req, res) => {
     })
         .then((data) => res.status(200).json(data))
         .catch((error) => console.log(error));
+
+    await Notification.create({
+        recipient: recipient,
+        message: equipment_name + " захиалгын хүсэлт илгээгдлээ."
+    })
 });
 
 router.post('/deleteBooking', auth, async (req, res) => {
     console.log("delete");
+
+    const { recipient, equipment_name } = req.body;
     await Booking.findByIdAndDelete(req.body.id);
     res.status(200).send("success");
- 
+    await Notification.create({
+        recipient: recipient,
+        message: equipment_name + "захиалгыг цуцлагдлаа."
+    })
+
 });
 
 router.get('/getBooking', auth, async (req, res) => {
@@ -215,21 +238,101 @@ router.get('/getBooking', auth, async (req, res) => {
         },
         {
             $unwind: '$equipment'
-        }
-    ])
+        },
+    ]).sort({ _id: -1 })
         .then((data) => {
             res.status(200).send(data);
         })
         .catch((error) => console.log(error));
 });
 
-router.post('/repair', auth, async (req, res) => {
+
+router.post('/createRepair', auth, async (req, res) => {
+    const { owner_id, booking_id, desc } = req.body;
+    console.log(req.body);
+    await Repair.create({
+        booking_id: booking_id,
+        renter_id: req.user_id,
+        owner_id: owner_id,
+        desc: desc
+    })
+        .then((data) => res.status(200).send(data))
+        .catch((error) => console(error));
+});
+
+router.get('/getRepair', auth, async (req, res) => {
+    // await Repair.aggregate([
+    //     {
+    //         $match:
+    //             { renter_id: new mongoose.Types.ObjectId(req.user_id) }
+    //     },
+    //     {
+    //         $lookup: {
+    //           from: 'equipment',
+    //           localField: '',
+    //           foreignField: field,
+    //           as: result
+    //         }
+    //     }
+    // ])
+
+    await Repair.find({ renter_id: req.user_id })
+        .then((data) => res.status(200).send(data))
+        .catch((error) => console(error));
+});
+
+router.post('/getRating', auth, async (req, res) => {
+    const { owner_id } = req.body;
+    let rating = 0.0;
     try {
+        const data = await Rating.find({
+            ownerId: owner_id
+        });
+        data.map((e) => {
+            return rating += (e.rating.toFixed(2) / data.length);
+        })
+
+
+        res.status(200).send({ rate: rating })
+    } catch (error) {
 
     }
-    catch (error) {
-        console.log(error)
-    }
+
+
+});
+
+
+router.post('/giveRating', auth, async (req, res) => {
+
+    const { owner_id, rating } = req.body;
+    console.log("RATE " + owner_id);
+    await Rating.findOne({ renterId: req.user_id })
+        .then(async (data) => {
+            if (data) {
+                await Rating.findOneAndUpdate(
+                    {
+                        renterId: req.user_id,
+                        ownerId: owner_id
+                    },
+                    {
+                        $set: {
+                            rating: rating,
+                        }
+                    });
+            }
+            else {
+                await Rating.create({
+                    renterId: req.user_id,
+                    ownerId: owner_id,
+                    rating: rating,
+                })
+            }
+        })
+});
+router.get('/notification', auth, async (req, res) => {
+    console.log(req.user_id);
+    await Notification.find({ recipient: "64240cfbeba5995db52dcec2" })
+        .then((data) => res.status(200).send(data))
+        .catch((e) => console.log(e));
 })
-
 module.exports = router;
